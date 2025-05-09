@@ -12,6 +12,7 @@ void clear_input();
 void init_game(struct gamestate* g) {
     srand(time(NULL));
     g->difficulty = 2;//3 is medium: 2 is easy 4 is hard
+    g->health = 3;
     g->player_x = GRID_SIZE / 2;
     g->player_y = GRID_SIZE / 2;
     
@@ -55,7 +56,7 @@ void print_grid(struct gamestate* g) {
     }
     printf("\n");
     
-    printf("Score: %d  Fuel: %d\n", g->points, g->fuel_level);
+    printf("Score: %d  Fuel: %d  Health: %d\n", g->points, g->fuel_level, g->health );
     printf("WASD to move, Q to quit\n");
     printf("Collect 10 points by picking up Junk to win\n");
     printf("Before the feul runs out!!!\n");
@@ -97,13 +98,6 @@ int check_collision(struct gamestate* g) {
     if(g->collision_flag == 1){
         return 1;
     }
-    for(int i = 0; i < g->num_asteroids; i++) {
-        if(g->player_x == g->asteroid_x[i] && g->player_y == g->asteroid_y[i]) {
-            // show X at collision
-            g->grid[g->player_y][g->player_x] = 'X';
-            return 1;  // collision!
-        }
-    }
     return 0;  // no collision
 }
 
@@ -127,13 +121,19 @@ void move_player(struct gamestate* g, char direction) {
             if(g->player_x < GRID_SIZE-1) new_x++;
             break;
     }
-    
+    int is_collision = 0;
     // only move if position changed
     if(new_x != g->player_x || new_y != g->player_y) {
         // clear old position
         g->grid[g->player_y][g->player_x] = EMPTY;
         if(g->grid[new_y][new_x] == ASTEROID){
-            g->collision_flag = 1;
+            g->health -= 1;
+            if(g->health <= 0){
+                g->collision_flag = 1;
+
+            }
+            g->grid[g->player_y][g->player_x] = COLLISION;
+            is_collision = 1;
         }
         if(g->grid[new_y][new_x] == JUNK){
             g->collision_flag = 0;
@@ -146,7 +146,9 @@ void move_player(struct gamestate* g, char direction) {
         g->player_y = new_y;
         
         // set new position
-        g->grid[g->player_y][g->player_x] = PLAYER;
+        if(is_collision == 0){
+            g->grid[g->player_y][g->player_x] = PLAYER;
+        }
     }
 }
 
@@ -186,8 +188,12 @@ void shift_grid_down(struct gamestate* g) {
     }
     // check if new player position has asteroid or junk
     if (g->grid[g->player_y][g->player_x] == ASTEROID) {
-        g->grid[g->player_y][g->player_x] = 'X';
-        g->collision_flag = 1; // set a flag for collision
+        g->grid[g->player_y][g->player_x] = COLLISION;
+        g->health -= 1;
+        if(g->health <= 0){
+            g->collision_flag = 1;
+
+        }
     } else if (g->grid[g->player_y][g->player_x] == JUNK) {
         g->collision_flag = 0;
         g->grid[g->player_y][g->player_x] = PLAYER;
@@ -254,8 +260,8 @@ int main() {
         
         if(g.points >= 10){
             printf("You win! You collected 10 points!\n");
-            printf("Enter your name (no spaces, max 19 chars): ");
-            scanf("%19s", name);
+            printf("Enter your name (no spaces, max 20 chars): ");
+            scanf("%20s", name);
             save_score(name, 10, g.fuel_level);
             show_leaderboard(name, 10, g.fuel_level);
             game_over = 1;
@@ -263,7 +269,7 @@ int main() {
         }
         if(check_collision(&g)) {
             print_grid(&g); // show X
-            printf("\nGame Over! An asteroid hit you!\n");
+            printf("\nGame Over! Your health is 0!\n");
             game_over = 1;
             break;
         }

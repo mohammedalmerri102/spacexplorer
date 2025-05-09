@@ -9,6 +9,7 @@
 #define PLAYER 'P'
 #define JUNK 'J'
 #define ASTEROID 'A'
+#define COLLISION 'X'
 
 // max number of asteroids
 #define MAX_ASTEROIDS 3
@@ -24,7 +25,8 @@ struct gamestate {
     int asteroid_y[MAX_ASTEROIDS];
     int num_asteroids;                // current number of asteroids
     int collision_flag;
-    int difficulty; 
+    int difficulty;    
+    int health; 
 };
 
 // functions we need
