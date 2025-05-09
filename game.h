@@ -23,6 +23,8 @@ struct gamestate {
     int asteroid_x[MAX_ASTEROIDS];    // array of asteroid positions
     int asteroid_y[MAX_ASTEROIDS];
     int num_asteroids;                // current number of asteroids
+    int collision_flag;
+    int difficulty; 
 };
 
 // functions we need

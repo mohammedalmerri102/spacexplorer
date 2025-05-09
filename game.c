@@ -8,7 +8,7 @@
 // sets up the game
 void init_game(struct gamestate* g) {
     srand(time(NULL));
-    
+    g->difficulty = 2;//3 is medium: 2 is easy 4 is hard
     g->player_x = GRID_SIZE / 2;
     g->player_y = GRID_SIZE / 2;
     
@@ -54,6 +54,8 @@ void print_grid(struct gamestate* g) {
     
     printf("Score: %d  Fuel: %d\n", g->points, g->fuel_level);
     printf("WASD to move, Q to quit\n");
+    printf("Collect 10 points by picking up Junk to win\n");
+    printf("Before the feul runs out!!!\n");
 }
 
 // puts player on grid
@@ -85,23 +87,13 @@ void place_asteroids(struct gamestate* g) {
     }
 }
 
-// move all asteroids
-void move_asteroids(struct gamestate* g) {
-    for(int i = 0; i < g->num_asteroids; i++) {
-        g->grid[g->asteroid_y[i]][g->asteroid_x[i]] = EMPTY;  // clear old spot
-        
-        g->asteroid_x[i]++;  // move right
-        if(g->asteroid_x[i] >= GRID_SIZE) {
-            g->asteroid_x[i] = 0;
-            g->asteroid_y[i] = rand() % GRID_SIZE;
-        }
-        
-        g->grid[g->asteroid_y[i]][g->asteroid_x[i]] = ASTEROID;  // put in new spot
-    }
-}
+
 
 // check if player hit asteroid
 int check_collision(struct gamestate* g) {
+    if(g->collision_flag == 1){
+        return 1;
+    }
     for(int i = 0; i < g->num_asteroids; i++) {
         if(g->player_x == g->asteroid_x[i] && g->player_y == g->asteroid_y[i]) {
             // show X at collision
@@ -163,18 +155,38 @@ void shift_grid_down(struct gamestate* g) {
     while (junk_pos == asteroid_pos) {
         junk_pos = rand() % GRID_SIZE; // make sure they're not the same
     }
+    // probablity check for placing junk and asteriod
+    int place_junk=0;
+    int place_aster=0;
+    if(rand() % g->difficulty == 0){
+        place_junk = 1;
+    }
+    if(rand() % g->difficulty != 0){
+        place_aster = 1;
+    }
     for(int j = 0; j < GRID_SIZE; j++) {
-        if(j == asteroid_pos) {
+        if(j == asteroid_pos && place_aster == 1) {
             g->grid[0][j] = ASTEROID;
-        } else if(j == junk_pos) {
+        } else if(j == junk_pos && place_junk == 1) {
             g->grid[0][j] = JUNK;
         } else {
             g->grid[0][j] = EMPTY;
         }
     }
-    // DO NOT move player up automatically
-    // just put player back at their current position
-    g->grid[g->player_y][g->player_x] = PLAYER;
+    // check if new player position has asteroid or junk
+    if (g->grid[g->player_y][g->player_x] == ASTEROID) {
+        g->grid[g->player_y][g->player_x] = 'X';
+        g->collision_flag = 1; // set a flag for collision
+    } else if (g->grid[g->player_y][g->player_x] == JUNK) {
+        g->collision_flag = 0;
+        g->grid[g->player_y][g->player_x] = PLAYER;
+        g->points +=1;
+    } else {
+        g->collision_flag = 0;
+        g->grid[g->player_y][g->player_x] = PLAYER;
+    }
+    g->fuel_level -= 1;
+
 }
 
 // get key without waiting
@@ -197,6 +209,14 @@ int main() {
     
     printf("Welcome to SpaceXplorer!\n");
     printf("Starting game...\n");
+
+    printf("Enter your difficulty (2 is easy, 3 is medium, 4 is hard): ");
+    scanf("%d", &g.difficulty);
+    if(g.difficulty < 2 || g.difficulty > 4){
+        printf("Invalid difficulty. Defaulting to medium.\n");
+        g.difficulty = 3;
+    }
+
     sleep_ms(1000);
     
     init_game(&g);
@@ -218,11 +238,21 @@ int main() {
             break;
         }
         
-        move_asteroids(&g);
-        
+        //move_asteroids(&g);
+        if(g.points >= 20){
+            printf("You win! You collected 10 points!\n");
+            game_over = 1;
+            break;
+        }
         if(check_collision(&g)) {
             print_grid(&g); // show X
             printf("\nGame Over! An asteroid hit you!\n");
+            game_over = 1;
+            break;
+        }
+        if(g.fuel_level <= 0){
+            print_grid(&g); 
+            printf("\nGame Over! You ran out of fuel!\n");
             game_over = 1;
             break;
         }
