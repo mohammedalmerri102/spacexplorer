@@ -5,6 +5,9 @@
 #include <conio.h>
 #include "game.h"
 
+void save_score(char* name, int score, int fuel);
+void show_leaderboard(char* name, int score, int fuel);
+void clear_input();
 // sets up the game
 void init_game(struct gamestate* g) {
     srand(time(NULL));
@@ -12,7 +15,7 @@ void init_game(struct gamestate* g) {
     g->player_x = GRID_SIZE / 2;
     g->player_y = GRID_SIZE / 2;
     
-    g->fuel_level = 100;
+    g->fuel_level = 200;
     g->points = 0;
     g->num_asteroids = MAX_ASTEROIDS;
     
@@ -129,7 +132,15 @@ void move_player(struct gamestate* g, char direction) {
     if(new_x != g->player_x || new_y != g->player_y) {
         // clear old position
         g->grid[g->player_y][g->player_x] = EMPTY;
-        
+        if(g->grid[new_y][new_x] == ASTEROID){
+            g->collision_flag = 1;
+        }
+        if(g->grid[new_y][new_x] == JUNK){
+            g->collision_flag = 0;
+            g->points +=1;
+        }
+
+
         // update position
         g->player_x = new_x;
         g->player_y = new_y;
@@ -206,6 +217,7 @@ int main() {
     struct gamestate g;
     char move;
     int game_over = 0;
+    char name[20];
     
     printf("Welcome to SpaceXplorer!\n");
     printf("Starting game...\n");
@@ -225,6 +237,7 @@ int main() {
         print_grid(&g);
         
         move = get_input();
+        clear_input();
         if(move == 'q') break;
         
         if(move) {
@@ -238,9 +251,12 @@ int main() {
             break;
         }
         
-        //move_asteroids(&g);
-        if(g.points >= 20){
+        if(g.points >= 10){
             printf("You win! You collected 10 points!\n");
+            printf("Enter your name (no spaces, max 19 chars): ");
+            scanf("%19s", name);
+            save_score(name, 10, g.fuel_level);
+            show_leaderboard(name, 10, g.fuel_level);
             game_over = 1;
             break;
         }
@@ -262,4 +278,54 @@ int main() {
     }
     
     return 0;
+}
+
+// leaderboard stuff
+void save_score(char* name, int score, int fuel) {
+    FILE *f = fopen("leaderboard.txt", "a");
+    if(f) {
+        fprintf(f, "%s %d %d\n", name, score, fuel);
+        fclose(f);
+    }
+}
+
+void show_leaderboard(char* name, int score, int fuel) {
+    char n[100][20];
+    int s[100], fu[100];
+    int nplayers = 0;
+    FILE *f = fopen("leaderboard.txt", "r");
+    if(f) {
+        while(fscanf(f, "%19s %d %d", n[nplayers], &s[nplayers], &fu[nplayers]) == 3 && nplayers < 100) nplayers++;
+        fclose(f);
+    }
+    // sort by fuel desc, then score desc
+    for(int i=0;i<nplayers-1;i++){
+        for(int j=i+1;j<nplayers;j++){
+            if(fu[j]>fu[i] || (fu[j]==fu[i] && s[j]>s[i])){
+                int t=s[i];s[i]=s[j];s[j]=t;
+                t=fu[i];fu[i]=fu[j];fu[j]=t;
+                char tmp[20];
+                strcpy(tmp, n[i]);
+                strcpy(n[i], n[j]);
+                strcpy(n[j], tmp);
+            }
+        }
+    }
+    int rank = 1;
+    for(int i=0;i<nplayers;i++){
+        if(strcmp(n[i],name)==0 && s[i]==score && fu[i]==fuel){
+            rank = i+1;
+            break;
+        }
+    }
+    printf("Your rank: %d out of %d\n", rank, nplayers);
+    printf("Top 5:\n");
+    for(int i=0;i<5 && i<nplayers;i++){
+        printf("%d. %s Score: %d Fuel: %d\n", i+1, n[i], s[i], fu[i]);
+    }
 } 
+
+void clear_input() {
+    int c;
+    //while ((c = getchar()) != '\n' && c != EOF) {}
+}
