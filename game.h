@@ -33,5 +33,8 @@ void place_junk(struct gamestate* g);
 void place_asteroids(struct gamestate* g);
 void move_asteroids(struct gamestate* g);
 int check_collision(struct gamestate* g);
+void shift_grid_down(struct gamestate* g);
+char get_input(void);
+void sleep_ms(int ms);
 
 #endif 
