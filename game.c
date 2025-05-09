@@ -104,10 +104,12 @@ void move_asteroids(struct gamestate* g) {
 int check_collision(struct gamestate* g) {
     for(int i = 0; i < g->num_asteroids; i++) {
         if(g->player_x == g->asteroid_x[i] && g->player_y == g->asteroid_y[i]) {
-            return 1;  // hit!
+            // show X at collision
+            g->grid[g->player_y][g->player_x] = 'X';
+            return 1;  // collision!
         }
     }
-    return 0;  // no hit
+    return 0;  // no collision
 }
 
 // move player
@@ -170,13 +172,8 @@ void shift_grid_down(struct gamestate* g) {
             g->grid[0][j] = EMPTY;
         }
     }
-    // move player up one row if not at top
-    if (g->player_y > 0) {
-        g->player_y--;
-    } else {
-        g->player_y = 0; // clamp at top
-    }
-    // make sure player is visible at new position
+    // DO NOT move player up automatically
+    // just put player back at their current position
     g->grid[g->player_y][g->player_x] = PLAYER;
 }
 
@@ -215,6 +212,7 @@ int main() {
         }
         
         if(check_collision(&g)) {
+            print_grid(&g); // show X
             printf("\nGame Over! You hit an asteroid!\n");
             game_over = 1;
             break;
@@ -223,13 +221,14 @@ int main() {
         move_asteroids(&g);
         
         if(check_collision(&g)) {
+            print_grid(&g); // show X
             printf("\nGame Over! An asteroid hit you!\n");
             game_over = 1;
             break;
         }
         
         shift_grid_down(&g);
-        sleep_ms(1000);
+        sleep_ms(500);
     }
     
     return 0;
