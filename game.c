@@ -222,6 +222,11 @@ int main() {
     printf("Welcome to SpaceXplorer!\n");
     printf("Starting game...\n");
 
+    
+    sleep_ms(1000);
+    
+    init_game(&g);
+    
     printf("Enter your difficulty (2 is easy, 3 is medium, 4 is hard): ");
     scanf("%d", &g.difficulty);
     if(g.difficulty < 2 || g.difficulty > 4){
@@ -229,10 +234,6 @@ int main() {
         g.difficulty = 3;
     }
 
-    sleep_ms(1000);
-    
-    init_game(&g);
-    
     while(!game_over) {
         print_grid(&g);
         
